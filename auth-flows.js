@@ -1,4 +1,4 @@
-let pendingSignupEmail = '';
+let pendingSignupEmail = '', pendingRecoveryEmail = '';
 
 const authExtras = document.createElement('div');
 authExtras.innerHTML = `
@@ -23,11 +23,14 @@ $('authForm').appendChild(authExtras.firstElementChild);
 $('authForm').after(authExtras);
 
 const verifyForm = $('verifyForm'), forgotForm = $('forgotForm'), resetForm = $('resetForm'), forgotButton = $('forgotPasswordBtn');
+resetForm.insertAdjacentHTML('afterbegin', '<label id="resetCodeField">Mã khôi phục<input id="resetCode" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="123456" /></label>');
+const resetCodeField = $('resetCodeField'), resetCode = $('resetCode');
 function waitForClient() { return new Promise((resolve) => { const started = Date.now(); const check = () => { if (client) return resolve(client); if (Date.now() - started > 8000) return resolve(null); setTimeout(check, 100); }; check(); }); }
 function onlyAuthForm(form) { $('authForm').hidden = form !== $('authForm'); verifyForm.hidden = form !== verifyForm; forgotForm.hidden = form !== forgotForm; resetForm.hidden = form !== resetForm; document.querySelector('.auth-tabs').hidden = form !== $('authForm'); forgotButton.hidden = form !== $('authForm') || authMode !== 'login'; }
 function showVerify(email) { pendingSignupEmail = email; $('verifyEmail').textContent = email; onlyAuthForm(verifyForm); $('authTitle').textContent = 'Xác minh email'; $('authSubtitle').textContent = 'Nhập mã trong email để hoàn tất đăng ký.'; $('verifyCode').focus(); }
 function showForgot() { onlyAuthForm(forgotForm); $('authTitle').textContent = 'Quên mật khẩu'; $('authSubtitle').textContent = 'Chúng tôi sẽ gửi link khôi phục về Gmail của bạn.'; $('forgotEmail').focus(); }
-function showReset() { $('authScreen').hidden = false; $('appShell').hidden = true; onlyAuthForm(resetForm); $('authTitle').textContent = 'Đặt mật khẩu mới'; $('authSubtitle').textContent = 'Tạo mật khẩu mới cho tài khoản của bạn.'; $('resetPassword').focus(); }
+function showReset() { $('authScreen').hidden = false; $('appShell').hidden = true; onlyAuthForm(resetForm); resetCodeField.hidden = true; resetCode.required = false; $('authTitle').textContent = 'Đặt mật khẩu mới'; $('authSubtitle').textContent = 'Tạo mật khẩu mới cho tài khoản của bạn.'; $('resetPassword').focus(); }
+function showRecoveryCode(email) { pendingRecoveryEmail = email; onlyAuthForm(resetForm); resetCodeField.hidden = false; resetCode.required = true; $('authTitle').textContent = 'Nhập mã khôi phục'; $('authSubtitle').textContent = `Mã 6 số đã được gửi đến ${email}.`; resetCode.focus(); }
 function backToLogin() { onlyAuthForm($('authForm')); setAuthMode('login'); }
 
 forgotButton.onclick = showForgot;
@@ -53,7 +56,7 @@ $('authForm').onsubmit = async (event) => {
 };
 
 verifyForm.onsubmit = async (event) => { event.preventDefault(); const supabaseClient = await waitForClient(); const { data, error } = await supabaseClient.auth.verifyOtp({ email: pendingSignupEmail, token: $('verifyCode').value.trim(), type: 'signup' }); if (error) return showAuthError('Mã xác minh không đúng hoặc đã hết hạn.'); showApp(data.user); showToast('Đăng ký thành công'); };
-forgotForm.onsubmit = async (event) => { event.preventDefault(); const supabaseClient = await waitForClient(); const { error } = await supabaseClient.auth.resetPasswordForEmail($('forgotEmail').value.trim().toLowerCase(), { redirectTo: window.location.origin }); if (error) return showAuthError(error.message); showAuthError('Đã gửi link khôi phục. Hãy kiểm tra Gmail của bạn.'); };
-resetForm.onsubmit = async (event) => { event.preventDefault(); if ($('resetPassword').value !== $('resetPasswordConfirm').value) return showAuthError('Mật khẩu xác nhận không khớp.'); const supabaseClient = await waitForClient(); const { error } = await supabaseClient.auth.updateUser({ password: $('resetPassword').value }); if (error) return showAuthError(error.message); await supabaseClient.auth.signOut({ scope: 'global' }); backToLogin(); showAuthError('Đã đổi mật khẩu. Hãy đăng nhập lại.'); };
+forgotForm.onsubmit = async (event) => { event.preventDefault(); const supabaseClient = await waitForClient(); const email = $('forgotEmail').value.trim().toLowerCase(); const { error } = await supabaseClient.auth.signInWithOtp({ email, options: { shouldCreateUser: false } }); if (error) return showAuthError(error.message); showRecoveryCode(email); };
+resetForm.onsubmit = async (event) => { event.preventDefault(); if ($('resetPassword').value !== $('resetPasswordConfirm').value) return showAuthError('Mật khẩu xác nhận không khớp.'); const supabaseClient = await waitForClient(); if (!resetCodeField.hidden) { const { error: verifyError } = await supabaseClient.auth.verifyOtp({ email: pendingRecoveryEmail, token: resetCode.value.trim(), type: 'email' }); if (verifyError) return showAuthError('Mã khôi phục không đúng hoặc đã hết hạn.'); } const { error } = await supabaseClient.auth.updateUser({ password: $('resetPassword').value }); if (error) return showAuthError(error.message); await supabaseClient.auth.signOut({ scope: 'global' }); resetCode.value = ''; backToLogin(); showAuthError('Đã đổi mật khẩu. Hãy đăng nhập lại.'); };
 
 if (client) client.auth.onAuthStateChange((event) => { if (event === 'PASSWORD_RECOVERY') showReset(); });
