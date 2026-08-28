@@ -55,7 +55,7 @@ function setAuthMode(mode) {
 }
 function showAuthError(message) { $('authError').textContent = message || ''; }
 function showApp(user) { currentUser = user; $('authScreen').hidden = true; $('appShell').hidden = false; $('userAvatar').textContent = initials(user.user_metadata?.name || user.email || 'AD'); loadPlugins(); }
-function showLogin() { currentUser = null; $('authScreen').hidden = false; $('appShell').hidden = true; }
+function showLogin() { currentUser = null; $('authScreen').hidden = false; $('appShell').hidden = true; $('authForm').reset(); setAuthMode('login'); }
 function openModal(mode = 'plugin', id = '') { $('modalBackdrop').hidden = false; $('pluginForm').reset(); $('pluginForm').dataset.mode = mode; $('pluginForm').dataset.id = id; $('modalTitle').textContent = mode === 'version' ? 'Thêm phiên bản mới' : 'Thêm plugin mới'; $('modalDescription').textContent = mode === 'version' ? 'Thêm phiên bản cho plugin đang chọn.' : 'Tạo plugin mới để bắt đầu quản lý các phiên bản.'; $('pluginName').disabled = mode === 'version'; if (mode === 'version') $('pluginName').value = plugins.find((plugin) => plugin.id === id)?.name || ''; $('pluginName').focus(); }
 function closeModal() { $('modalBackdrop').hidden = true; $('pluginName').disabled = false; }
 function showToast(message) { $('toast').textContent = `✓  ${message}`; $('toast').classList.add('show'); clearTimeout(window.toastTimer); window.toastTimer = setTimeout(() => $('toast').classList.remove('show'), 2500); }
@@ -73,7 +73,7 @@ $('pageSize').onchange = (event) => { pageSize = Number(event.target.value); cur
 $('addPluginBtn').onclick = () => openModal(); $('closeModal').onclick = closeModal; $('cancelModal').onclick = closeModal;
 $('modalBackdrop').onclick = (event) => { if (event.target === event.currentTarget) closeModal(); };
 $('refreshBtn').onclick = () => { loadPlugins(); showToast('Danh sách đã được làm mới'); };
-$('logoutBtn').onclick = async () => { await client.auth.signOut(); showLogin(); };
+$('logoutBtn').onclick = async () => { await client.auth.signOut({ scope: 'global' }); showLogin(); showToast('Đã đăng xuất'); };
 document.addEventListener('keydown', (event) => { if (event.key === '/' && document.activeElement.tagName !== 'INPUT') { event.preventDefault(); $('searchInput').focus(); } if (event.key === 'Escape') closeModal(); });
 
 $('authForm').onsubmit = async (event) => {
@@ -118,7 +118,7 @@ async function bootstrap() {
     } catch (error) { /* Vercel config will show a helpful message in the login form. */ }
   }
   client = window.supabase?.createClient(config.url, config.anonKey);
-  if (client) client.auth.getSession().then(({ data }) => data.session ? showApp(data.session.user) : showLogin()); else showLogin();
+  if (client) { client.auth.onAuthStateChange((_event, session) => session ? showApp(session.user) : showLogin()); client.auth.getSession().then(({ data }) => data.session ? showApp(data.session.user) : showLogin()); } else showLogin();
 }
 bootstrap();
 function syncProfileVisual() {
@@ -135,14 +135,20 @@ function closeProfile() { $('profileBackdrop').hidden = true; }
 $('profileBtn').onclick = openProfile;
 $('closeProfile').onclick = closeProfile;
 $('profileBackdrop').onclick = (event) => { if (event.target === event.currentTarget) closeProfile(); };
-$('profileLogout').onclick = async () => { await client.auth.signOut(); closeProfile(); showLogin(); showToast('Đã đăng xuất'); };
+$('profileLogout').onclick = async () => { const { error } = await client.auth.signOut({ scope: 'global' }); closeProfile(); showLogin(); if (error) return showAuthError(error.message); showToast('Đã đăng xuất'); };
+$('profileEmail').parentElement.insertAdjacentHTML('afterend', '<label>Mật khẩu mới<input id="profilePassword" type="password" minlength="6" placeholder="Để trống nếu không đổi" /></label><label>Xác nhận mật khẩu mới<input id="profilePasswordConfirm" type="password" minlength="6" placeholder="Nhập lại mật khẩu mới" /></label>');
 $('profileForm').onsubmit = async (event) => {
   event.preventDefault();
   const name = $('profileName').value.trim();
-  const { error: authError } = await client.auth.updateUser({ data: { name } });
+  const newPassword = $('profilePassword').value;
+  if (newPassword && newPassword !== $('profilePasswordConfirm').value) return showAuthError('Mật khẩu mới xác nhận không khớp.');
+  const updatePayload = { data: { name } };
+  if (newPassword) updatePayload.password = newPassword;
+  const { error: authError } = await client.auth.updateUser(updatePayload);
   if (authError) return showAuthError(authError.message);
   const { error: profileError } = await client.from('profiles').update({ name }).eq('id', currentUser.id);
   if (profileError) return showAuthError(profileError.message);
   currentUser = { ...currentUser, user_metadata: { ...currentUser.user_metadata, name } };
-  syncProfileVisual(); closeProfile(); showToast('Đã cập nhật hồ sơ');
+  $('profilePassword').value = ''; $('profilePasswordConfirm').value = '';
+  syncProfileVisual(); closeProfile(); showToast(newPassword ? 'Đã cập nhật tên và mật khẩu' : 'Đã cập nhật tên');
 };
