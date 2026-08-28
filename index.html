@@ -10,7 +10,23 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="app-shell">
+    <section class="auth-screen" id="authScreen">
+      <div class="auth-card">
+        <div class="auth-brand"><span class="brand-mark"></span><span>Kho Plugin</span></div>
+        <div class="auth-copy"><div class="eyebrow">KHU VỰC QUẢN TRỊ</div><h1 id="authTitle">Đăng nhập</h1><p id="authSubtitle">Đăng nhập để quản lý kho plugin của bạn.</p></div>
+        <div class="auth-tabs"><button class="auth-tab active" data-auth-mode="login">Đăng nhập</button><button class="auth-tab" data-auth-mode="register">Tạo tài khoản</button></div>
+        <form id="authForm">
+          <label id="nameField" hidden>Họ và tên<input id="authName" placeholder="Nguyễn Văn A" /></label>
+          <label>Email<input id="authEmail" type="email" required placeholder="admin@example.com" /></label>
+          <label>Mật khẩu<input id="authPassword" type="password" required minlength="6" placeholder="Tối thiểu 6 ký tự" /></label>
+          <label id="confirmField" hidden>Xác nhận mật khẩu<input id="authConfirm" type="password" minlength="6" placeholder="Nhập lại mật khẩu" /></label>
+          <button class="primary-button auth-submit" type="submit" id="authSubmit">Đăng nhập</button>
+        </form>
+        <p class="auth-note">Prototype nội bộ · Tài khoản được lưu trên trình duyệt này</p>
+        <div class="auth-error" id="authError" role="alert"></div>
+      </div>
+    </section>
+    <div class="app-shell" id="appShell" hidden>
       <aside class="sidebar">
         <div class="brand"><span class="brand-mark"></span><span>Kho Plugin</span></div>
         <nav class="side-nav" aria-label="Điều hướng chính">
@@ -28,7 +44,7 @@
           <a href="#" class="nav-link">Lịch sử tải</a>
           <a href="#" class="nav-link">Cấu hình</a>
         </nav>
-        <button class="logout">↪ <span>Đăng xuất</span></button>
+        <button class="logout" id="logoutBtn">↪ <span>Đăng xuất</span></button>
       </aside>
 
       <main class="main-content">
@@ -41,7 +57,7 @@
           <div class="top-actions">
             <span class="admin-pill"><span class="status-dot"></span>Admin</span>
             <button class="icon-button" aria-label="Thông báo">♧<span class="notification-dot"></span></button>
-            <div class="avatar">AD</div>
+            <div class="avatar" id="userAvatar">AD</div>
           </div>
         </header>
 
