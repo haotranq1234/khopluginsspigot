@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kho Plugin — Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand"><span class="brand-mark"></span><span>Kho Plugin</span></div>
+        <nav class="side-nav" aria-label="Điều hướng chính">
+          <div class="nav-label">KHO</div>
+          <a href="#" class="nav-link">Tải lên</a>
+          <a href="#" class="nav-link active"><span class="active-bar"></span>Plugin <span class="nav-count" id="navPluginCount">24</span></a>
+          <a href="#" class="nav-link">Chờ xử lý</a>
+          <div class="nav-label">SPIGOT</div>
+          <a href="#" class="nav-link">Tài khoản Spigot</a>
+          <div class="nav-label">TIỀN</div>
+          <a href="#" class="nav-link">Đối soát</a>
+          <a href="#" class="nav-link">Ví coin</a>
+          <a href="#" class="nav-link">Thống kê quỹ</a>
+          <div class="nav-label">KHÁC</div>
+          <a href="#" class="nav-link">Lịch sử tải</a>
+          <a href="#" class="nav-link">Cấu hình</a>
+        </nav>
+        <button class="logout">↪ <span>Đăng xuất</span></button>
+      </aside>
+
+      <main class="main-content">
+        <header class="topbar">
+          <div>
+            <div class="eyebrow">KHO / PLUGIN</div>
+            <h1>Danh sách plugin</h1>
+            <p class="subtitle">Quản lý plugin, phiên bản và doanh thu của kho.</p>
+          </div>
+          <div class="top-actions">
+            <span class="admin-pill"><span class="status-dot"></span>Admin</span>
+            <button class="icon-button" aria-label="Thông báo">♧<span class="notification-dot"></span></button>
+            <div class="avatar">AD</div>
+          </div>
+        </header>
+
+        <section class="stats-grid" aria-label="Tổng quan">
+          <article class="stat-card"><div class="stat-icon purple">✦</div><div><span>Tổng plugin</span><strong id="totalPlugins">24</strong><small>+3 tháng này</small></div></article>
+          <article class="stat-card"><div class="stat-icon blue">↻</div><div><span>Tổng phiên bản</span><strong id="totalVersions">48</strong><small>+8 phiên bản mới</small></div></article>
+          <article class="stat-card"><div class="stat-icon green">₫</div><div><span>Doanh thu tháng</span><strong>12,8M ₫</strong><small class="up">↑ 18,4%</small></div></article>
+          <article class="stat-card"><div class="stat-icon orange">⇩</div><div><span>Lượt tải tháng</span><strong>1.284</strong><small class="up">↑ 12,1%</small></div></article>
+        </section>
+
+        <section class="panel">
+          <div class="panel-toolbar">
+            <div class="search-wrap"><span>⌕</span><input id="searchInput" type="search" placeholder="Tìm theo tên plugin...  (/)" /><kbd>/</kbd></div>
+            <select id="platformFilter" aria-label="Lọc nền tảng"><option value="all">Tất cả nền tảng</option><option value="spigot">Spigot</option><option value="paper">Paper</option><option value="bungeecord">BungeeCord</option></select>
+            <select id="tagFilter" aria-label="Lọc loại plugin"><option value="all">Tất cả loại</option><option value="premium">Premium</option><option value="free">Miễn phí</option></select>
+            <button class="primary-button" id="addPluginBtn">＋ Thêm plugin</button>
+          </div>
+          <div class="table-meta"><div><strong>Danh sách plugin</strong><span id="resultLabel">24 plugin</span></div><button class="refresh-button" id="refreshBtn">↻ Làm mới</button></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>TÊN PLUGIN</th><th>NỀN TẢNG</th><th>PHIÊN BẢN</th><th>GIÁ</th><th>TRẠNG THÁI</th><th></th></tr></thead>
+              <tbody id="pluginRows"></tbody>
+            </table>
+            <div id="emptyState" class="empty-state" hidden>Không tìm thấy plugin phù hợp.</div>
+          </div>
+          <div class="pagination"><span id="paginationLabel">Hiển thị 1–8 trong 24 plugin</span><div class="page-buttons" id="pageButtons"></div><select id="pageSize"><option value="8">8 / trang</option><option value="12">12 / trang</option><option value="24">24 / trang</option></select></div>
+        </section>
+        <footer>Kho Plugin <span>•</span> Cập nhật lần cuối: vừa xong <span>•</span> Phiên bản hệ thống 1.0.0</footer>
+      </main>
+    </div>
+
+    <div class="modal-backdrop" id="modalBackdrop" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><button class="close-modal" id="closeModal">×</button><div class="modal-kicker">QUẢN TRỊ KHO PLUGIN</div><h2 id="modalTitle">Thêm plugin mới</h2><p id="modalDescription">Tạo plugin mới để bắt đầu quản lý các phiên bản.</p><form id="pluginForm"><label>Tên plugin<input id="pluginName" required placeholder="Ví dụ: EssentialsX" /></label><div class="form-row"><label>Nền tảng<select id="pluginPlatform"><option>Spigot</option><option>Paper</option><option>BungeeCord</option></select></label><label>Loại<select id="pluginTag"><option value="free">Miễn phí</option><option value="premium">Premium</option></select></label></div><div class="form-row"><label>Giá (VNĐ)<input id="pluginPrice" type="number" min="0" value="0" /></label><label>Phiên bản đầu tiên<input id="pluginVersion" required value="1.0.0" /></label></div><div class="modal-actions"><button type="button" class="secondary-button" id="cancelModal">Hủy</button><button type="submit" class="primary-button">Lưu plugin</button></div></form></div></div>
+    <div class="toast" id="toast" role="status"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
