@@ -1,6 +1,6 @@
 const $ = (id) => document.getElementById(id);
 const config = window.SUPABASE_CONFIG || {};
-const client = window.supabase?.createClient(config.url, config.anonKey);
+let client = window.supabase?.createClient(config.url, config.anonKey);
 let plugins = [], currentPage = 1, pageSize = 8, authMode = 'login', currentUser = null;
 
 const initials = (name) => name.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
@@ -109,4 +109,15 @@ $('pluginForm').onsubmit = async (event) => {
   closeModal(); currentPage = 1; await loadPlugins();
 };
 
-if (client) client.auth.getSession().then(({ data }) => data.session ? showApp(data.session.user) : showLogin()); else showLogin();
+async function bootstrap() {
+  if (config.anonKey?.includes('PASTE_')) {
+    try {
+      const response = await fetch('/api/config');
+      const runtimeConfig = await response.json();
+      Object.assign(config, runtimeConfig);
+    } catch (error) { /* Vercel config will show a helpful message in the login form. */ }
+  }
+  client = window.supabase?.createClient(config.url, config.anonKey);
+  if (client) client.auth.getSession().then(({ data }) => data.session ? showApp(data.session.user) : showLogin()); else showLogin();
+}
+bootstrap();
