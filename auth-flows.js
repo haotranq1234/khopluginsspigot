@@ -41,12 +41,12 @@ $('authForm').onsubmit = async (event) => {
   if (authMode === 'register') {
     if (password !== $('authConfirm').value) return showAuthError('Mật khẩu xác nhận không khớp.');
     const { data, error } = await supabaseClient.auth.signUp({ email, password, options: { data: { name: $('authName').value.trim() } } });
-    if (error) return showAuthError(error.message);
+    if (error) return showAuthError(/already registered|already exists|user.*exist/i.test(error.message) ? 'Gmail này đã có tài khoản.' : error.message);
     if (data.session) return showApp(data.session.user);
     showVerify(email);
   } else {
     const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-    if (error) return showAuthError('Email hoặc mật khẩu không đúng.');
+    if (error) return showAuthError('Tài khoản chưa đăng ký hoặc thông tin đăng nhập không đúng.');
     showApp(data.user); showToast('Đăng nhập thành công');
   }
 };
