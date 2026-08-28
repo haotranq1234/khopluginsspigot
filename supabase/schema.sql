@@ -51,6 +51,10 @@ create table if not exists public.plugins (
   updated_at timestamptz not null default now()
 );
 
+alter table public.plugins add column if not exists is_downloadable boolean not null default true;
+alter table public.plugins add column if not exists download_count bigint not null default 0;
+alter table public.plugins add column if not exists sales_count bigint not null default 0;
+
 create table if not exists public.plugin_versions (
   id uuid primary key default gen_random_uuid(),
   plugin_id uuid not null references public.plugins(id) on delete cascade,
@@ -64,6 +68,19 @@ create table if not exists public.plugin_versions (
 
 create index if not exists plugins_created_at_idx on public.plugins (created_at desc);
 create index if not exists plugin_versions_plugin_id_idx on public.plugin_versions (plugin_id);
+
+create or replace function public.increment_plugin_downloads(plugin_id uuid)
+returns void
+language sql
+security definer set search_path = public
+as $$
+  update public.plugins
+  set download_count = download_count + 1
+  where id = plugin_id and is_downloadable = true and status = 'active';
+$$;
+
+revoke all on function public.increment_plugin_downloads(uuid) from public;
+grant execute on function public.increment_plugin_downloads(uuid) to authenticated;
 
 alter table public.profiles enable row level security;
 alter table public.plugins enable row level security;

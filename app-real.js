@@ -1,7 +1,7 @@
 const $ = (id) => document.getElementById(id);
 const config = window.SUPABASE_CONFIG || {};
 let client = window.supabase?.createClient(config.url, config.anonKey);
-let plugins = [], currentPage = 1, pageSize = 8, authMode = 'login', currentUser = null;
+let plugins = [], currentPage = 1, pageSize = 8, authMode = 'login', currentUser = null, currentRole = 'member';
 
 const initials = (name) => name.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
 const priceLabel = (value) => `${Number(value || 0).toLocaleString('vi-VN')} ₫`;
@@ -23,7 +23,7 @@ function render() {
     <td><div class="plugin-title"><span class="plugin-logo">${initials(plugin.name)}</span><span>${plugin.name}</span>${tagLabel(plugin.tag)}</div></td>
     <td>${plugin.platform}</td><td><span class="version-count">${plugin.versions}</span></td><td><span class="price">${priceLabel(plugin.price)}</span></td>
     <td><span class="state ${plugin.status === 'draft' ? 'draft' : ''}"><span>●</span>&nbsp;${plugin.status === 'draft' ? 'Bản nháp' : 'Hoạt động'}</span></td>
-    <td><div class="row-actions"><button class="row-button version-btn" data-id="${plugin.id}">＋ Phiên bản</button><button class="row-button delete-btn" data-id="${plugin.id}" data-name="${plugin.name}">Xóa</button></div></td>
+    <td><div class="row-actions">${currentRole === 'admin' ? `<button class="row-button version-btn" data-id="${plugin.id}">＋ Phiên bản</button><button class="row-button delete-btn" data-id="${plugin.id}" data-name="${plugin.name}">Xóa</button>` : (plugin.is_downloadable ? `<button class="row-button download-btn" data-id="${plugin.id}" data-name="${plugin.name}">⇩ Tải plugin</button>` : '<span class="not-available">Không cho tải</span>')}</div></td>
   </tr>`).join('');
   $('emptyState').hidden = shown.length > 0;
   $('resultLabel').textContent = `${list.length} plugin`;
@@ -35,12 +35,15 @@ function render() {
   document.querySelectorAll('[data-page]').forEach((button) => { button.onclick = () => { currentPage = Number(button.dataset.page); render(); }; });
   document.querySelectorAll('.version-btn').forEach((button) => { button.onclick = () => openModal('version', button.dataset.id); });
   document.querySelectorAll('.delete-btn').forEach((button) => { button.onclick = () => deletePlugin(button.dataset.id, button.dataset.name); });
+  document.querySelectorAll('.download-btn').forEach((button) => { button.onclick = () => downloadPlugin(button.dataset.id, button.dataset.name); });
 }
 
 async function loadPlugins() {
-  const { data, error } = await client.from('plugins').select('id,name,platform,price,tag,status,plugin_versions(id)').order('created_at', { ascending: false });
+  const { data, error } = await client.from('plugins').select('id,name,platform,price,tag,status,is_downloadable,download_count,sales_count,plugin_versions(id,version,download_path)').order('created_at', { ascending: false });
   if (error) return showAuthError(`Không tải được plugin: ${error.message}`);
-  plugins = (data || []).map((plugin) => ({ ...plugin, versions: plugin.plugin_versions?.length || 0 }));
+  plugins = (data || []).filter((plugin) => currentRole === 'admin' || plugin.status === 'active').map((plugin) => ({ ...plugin, versions: plugin.plugin_versions?.length || 0 }));
+  const statValues = document.querySelectorAll('.stat-card strong');
+  if (statValues.length > 1) { statValues[1].textContent = plugins.reduce((total, plugin) => total + plugin.versions, 0); statValues[2].textContent = priceLabel(plugins.reduce((total, plugin) => total + Number(plugin.sales_count || 0), 0)); statValues[3].textContent = plugins.reduce((total, plugin) => total + Number(plugin.download_count || 0), 0).toLocaleString('vi-VN'); }
   render();
 }
 
@@ -54,7 +57,7 @@ function setAuthMode(mode) {
   $('authName').required = mode === 'register'; $('authConfirm').required = mode === 'register'; showAuthError('');
 }
 function showAuthError(message) { $('authError').textContent = message || ''; }
-function showApp(user) { currentUser = user; $('authScreen').hidden = true; $('appShell').hidden = false; $('userAvatar').textContent = initials(user.user_metadata?.name || user.email || 'AD'); loadPlugins(); }
+async function showApp(user) { currentUser = user; const { data: profile } = await client.from('profiles').select('role,name').eq('id', user.id).maybeSingle(); currentRole = profile?.role === 'admin' ? 'admin' : 'member'; $('authScreen').hidden = true; $('appShell').hidden = false; $('userAvatar').textContent = initials(profile?.name || user.user_metadata?.name || user.email || 'AD'); $('profileBtn').textContent = $('userAvatar').textContent; document.querySelectorAll('.stat-card').forEach((card, index) => card.classList.toggle('admin-only', currentRole !== 'admin' && index > 0)); $('addPluginBtn').hidden = currentRole !== 'admin'; document.querySelector('.admin-pill').innerHTML = `<span class="status-dot"></span>${currentRole === 'admin' ? 'Admin' : 'Member'}`; loadPlugins(); }
 function showLogin() { currentUser = null; $('authScreen').hidden = false; $('appShell').hidden = true; $('authForm').reset(); setAuthMode('login'); }
 function openModal(mode = 'plugin', id = '') { $('modalBackdrop').hidden = false; $('pluginForm').reset(); $('pluginForm').dataset.mode = mode; $('pluginForm').dataset.id = id; $('modalTitle').textContent = mode === 'version' ? 'Thêm phiên bản mới' : 'Thêm plugin mới'; $('modalDescription').textContent = mode === 'version' ? 'Thêm phiên bản cho plugin đang chọn.' : 'Tạo plugin mới để bắt đầu quản lý các phiên bản.'; $('pluginName').disabled = mode === 'version'; if (mode === 'version') $('pluginName').value = plugins.find((plugin) => plugin.id === id)?.name || ''; $('pluginName').focus(); }
 function closeModal() { $('modalBackdrop').hidden = true; $('pluginName').disabled = false; }
@@ -66,6 +69,15 @@ async function deletePlugin(id, name) {
   if (error) return showAuthError(`Không xóa được plugin: ${error.message}`);
   showToast(`Đã xóa plugin “${name}”`); await loadPlugins();
 }
+async function downloadPlugin(id, name) {
+  const plugin = plugins.find((item) => item.id === id);
+  const version = plugin?.plugin_versions?.find((item) => item.download_path) || plugin?.plugin_versions?.[0];
+  if (!version?.download_path) return showAuthError('Plugin này chưa có file .jar để tải.');
+  const { data, error } = await client.storage.from('plugin-files').createSignedUrl(version.download_path, 60);
+  if (error) return showAuthError(`Không tạo được link tải: ${error.message}`);
+  await client.rpc('increment_plugin_downloads', { plugin_id: id });
+  window.open(data.signedUrl, '_blank', 'noopener'); showToast(`Đang tải ${name}`);
+}
 
 document.querySelectorAll('.auth-tab').forEach((tab) => { tab.onclick = () => setAuthMode(tab.dataset.authMode); });
 document.querySelectorAll('#searchInput,#platformFilter,#tagFilter').forEach((element) => element.addEventListener('input', () => { currentPage = 1; render(); }));
@@ -74,6 +86,7 @@ $('addPluginBtn').onclick = () => openModal(); $('closeModal').onclick = closeMo
 $('modalBackdrop').onclick = (event) => { if (event.target === event.currentTarget) closeModal(); };
 $('refreshBtn').onclick = () => { loadPlugins(); showToast('Danh sách đã được làm mới'); };
 $('logoutBtn').onclick = async () => { await client.auth.signOut({ scope: 'global' }); showLogin(); showToast('Đã đăng xuất'); };
+$('pluginVersion').parentElement.parentElement.insertAdjacentHTML('afterend', '<label class="upload-field">File plugin (.jar)<input id="pluginFile" type="file" accept=".jar,application/java-archive" /></label><label class="download-permission"><input id="pluginDownloadAllowed" type="checkbox" checked /> Cho phép member tải plugin</label>');
 document.addEventListener('keydown', (event) => { if (event.key === '/' && document.activeElement.tagName !== 'INPUT') { event.preventDefault(); $('searchInput').focus(); } if (event.key === 'Escape') closeModal(); });
 
 $('authForm').onsubmit = async (event) => {
@@ -100,9 +113,11 @@ $('pluginForm').onsubmit = async (event) => {
     if (error) return showAuthError(error.message);
     showToast('Đã thêm phiên bản mới');
   } else {
-    const { data: plugin, error } = await client.from('plugins').insert({ name: $('pluginName').value.trim(), platform: $('pluginPlatform').value, price: Number($('pluginPrice').value || 0), tag: $('pluginTag').value, created_by: currentUser.id }).select('id').single();
+    const { data: plugin, error } = await client.from('plugins').insert({ name: $('pluginName').value.trim(), platform: $('pluginPlatform').value, price: Number($('pluginPrice').value || 0), tag: $('pluginTag').value, is_downloadable: $('pluginDownloadAllowed').checked, created_by: currentUser.id }).select('id').single();
     if (error) return showAuthError(error.message);
-    const { error: versionError } = await client.from('plugin_versions').insert({ plugin_id: plugin.id, version: $('pluginVersion').value.trim(), created_by: currentUser.id });
+    const file = $('pluginFile').files[0]; let downloadPath = null;
+    if (file) { downloadPath = `${plugin.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`; const { error: uploadError } = await client.storage.from('plugin-files').upload(downloadPath, file, { upsert: false }); if (uploadError) return showAuthError(`Không tải file lên được: ${uploadError.message}`); }
+    const { error: versionError } = await client.from('plugin_versions').insert({ plugin_id: plugin.id, version: $('pluginVersion').value.trim(), download_path: downloadPath, created_by: currentUser.id });
     if (versionError) return showAuthError(versionError.message);
     showToast('Đã tạo plugin mới');
   }
