@@ -42,6 +42,7 @@ $('authForm').onsubmit = async (event) => {
     if (password !== $('authConfirm').value) return showAuthError('Mật khẩu xác nhận không khớp.');
     const { data, error } = await supabaseClient.auth.signUp({ email, password, options: { data: { name: $('authName').value.trim() } } });
     if (error) return showAuthError(/already registered|already exists|user.*exist/i.test(error.message) ? 'Gmail này đã có tài khoản.' : error.message);
+    if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) return showAuthError('Gmail này đã có tài khoản.');
     if (data.session) return showApp(data.session.user);
     showVerify(email);
   } else {
