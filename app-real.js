@@ -121,3 +121,28 @@ async function bootstrap() {
   if (client) client.auth.getSession().then(({ data }) => data.session ? showApp(data.session.user) : showLogin()); else showLogin();
 }
 bootstrap();
+function syncProfileVisual() {
+  if (!currentUser) return;
+  const name = currentUser.user_metadata?.name || currentUser.email || 'AD';
+  const initialsText = initials(name);
+  $('profileBtn').textContent = initialsText;
+  $('profileAvatar').textContent = initialsText;
+  $('profileName').value = currentUser.user_metadata?.name || '';
+  $('profileEmail').value = currentUser.email || '';
+}
+function openProfile() { syncProfileVisual(); $('profileBackdrop').hidden = false; $('profileName').focus(); }
+function closeProfile() { $('profileBackdrop').hidden = true; }
+$('profileBtn').onclick = openProfile;
+$('closeProfile').onclick = closeProfile;
+$('profileBackdrop').onclick = (event) => { if (event.target === event.currentTarget) closeProfile(); };
+$('profileLogout').onclick = async () => { await client.auth.signOut(); closeProfile(); showLogin(); showToast('Đã đăng xuất'); };
+$('profileForm').onsubmit = async (event) => {
+  event.preventDefault();
+  const name = $('profileName').value.trim();
+  const { error: authError } = await client.auth.updateUser({ data: { name } });
+  if (authError) return showAuthError(authError.message);
+  const { error: profileError } = await client.from('profiles').update({ name }).eq('id', currentUser.id);
+  if (profileError) return showAuthError(profileError.message);
+  currentUser = { ...currentUser, user_metadata: { ...currentUser.user_metadata, name } };
+  syncProfileVisual(); closeProfile(); showToast('Đã cập nhật hồ sơ');
+};

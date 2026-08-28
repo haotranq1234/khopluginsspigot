@@ -57,7 +57,7 @@
           <div class="top-actions">
             <span class="admin-pill"><span class="status-dot"></span>Admin</span>
             <button class="icon-button" aria-label="Thông báo">♧<span class="notification-dot"></span></button>
-            <div class="avatar" id="userAvatar">AD</div>
+            <button class="avatar" id="profileBtn" aria-label="Mở hồ sơ">AD</button>
           </div>
         </header>
 
@@ -90,7 +90,9 @@
     </div>
 
     <div class="modal-backdrop" id="modalBackdrop" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><button class="close-modal" id="closeModal">×</button><div class="modal-kicker">QUẢN TRỊ KHO PLUGIN</div><h2 id="modalTitle">Thêm plugin mới</h2><p id="modalDescription">Tạo plugin mới để bắt đầu quản lý các phiên bản.</p><form id="pluginForm"><label>Tên plugin<input id="pluginName" required placeholder="Ví dụ: EssentialsX" /></label><div class="form-row"><label>Nền tảng<select id="pluginPlatform"><option>Spigot</option><option>Paper</option><option>BungeeCord</option></select></label><label>Loại<select id="pluginTag"><option value="free">Miễn phí</option><option value="premium">Premium</option></select></label></div><div class="form-row"><label>Giá (VNĐ)<input id="pluginPrice" type="number" min="0" value="0" /></label><label>Phiên bản đầu tiên<input id="pluginVersion" required value="1.0.0" /></label></div><div class="modal-actions"><button type="button" class="secondary-button" id="cancelModal">Hủy</button><button type="submit" class="primary-button">Lưu plugin</button></div></form></div></div>
+    <div class="modal-backdrop" id="profileBackdrop" hidden><div class="modal profile-modal" role="dialog" aria-modal="true" aria-labelledby="profileTitle"><button class="close-modal" id="closeProfile">×</button><div class="profile-heading"><div class="avatar large" id="profileAvatar">AD</div><div><div class="modal-kicker">TÀI KHOẢN</div><h2 id="profileTitle">Hồ sơ cá nhân</h2></div></div><p>Chỉnh sửa thông tin tài khoản của bạn.</p><form id="profileForm"><label>Họ và tên<input id="profileName" required placeholder="Nguyễn Văn A" /></label><label>Email<input id="profileEmail" type="email" disabled /></label><div class="modal-actions"><button type="button" class="secondary-button" id="profileLogout">Đăng xuất</button><button type="submit" class="primary-button">Lưu thay đổi</button></div></form></div></div>
     <div class="toast" id="toast" role="status"></div>
+    <span id="userAvatar" hidden></span>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
     <script src="app-real.js"></script>

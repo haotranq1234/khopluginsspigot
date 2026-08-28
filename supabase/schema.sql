@@ -73,6 +73,10 @@ drop policy if exists "Users can read their profile" on public.profiles;
 create policy "Users can read their profile" on public.profiles
   for select to authenticated using (id = auth.uid() or public.is_admin());
 
+drop policy if exists "Users can update their profile" on public.profiles;
+create policy "Users can update their profile" on public.profiles
+  for update to authenticated using (id = auth.uid()) with check (id = auth.uid());
+
 drop policy if exists "Authenticated users can read plugins" on public.plugins;
 create policy "Authenticated users can read plugins" on public.plugins
   for select to authenticated using (true);
