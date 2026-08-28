@@ -11,7 +11,7 @@ authExtras.innerHTML = `
   <form id="forgotForm" class="auth-secondary-form" hidden>
     <div class="auth-form-icon">↗</div><h3>Khôi phục mật khẩu</h3><p>Nhập Gmail, chúng tôi sẽ gửi link để bạn đặt mật khẩu mới.</p>
     <label>Email<input id="forgotEmail" type="email" required placeholder="admin@example.com" /></label>
-    <button class="primary-button auth-submit" type="submit">Gửi link khôi phục</button><button type="button" class="text-button" id="backFromForgot">Quay lại đăng nhập</button>
+    <button class="primary-button auth-submit" type="submit">Gửi link khôi phục</button><button type="button" class="text-button" id="backFromForgot">Quay về trang đăng nhập</button>
   </form>
   <form id="resetForm" class="auth-secondary-form" hidden>
     <div class="auth-form-icon">●</div><h3>Đặt mật khẩu mới</h3><p>Nhập mật khẩu mới cho tài khoản của bạn.</p>
@@ -24,7 +24,7 @@ $('authForm').after(authExtras);
 
 const verifyForm = $('verifyForm'), forgotForm = $('forgotForm'), resetForm = $('resetForm'), forgotButton = $('forgotPasswordBtn');
 function waitForClient() { return new Promise((resolve) => { const started = Date.now(); const check = () => { if (client) return resolve(client); if (Date.now() - started > 8000) return resolve(null); setTimeout(check, 100); }; check(); }); }
-function onlyAuthForm(form) { $('authForm').hidden = form !== $('authForm'); verifyForm.hidden = form !== verifyForm; forgotForm.hidden = form !== forgotForm; resetForm.hidden = form !== resetForm; forgotButton.hidden = form !== $('authForm') || authMode !== 'login'; }
+function onlyAuthForm(form) { $('authForm').hidden = form !== $('authForm'); verifyForm.hidden = form !== verifyForm; forgotForm.hidden = form !== forgotForm; resetForm.hidden = form !== resetForm; document.querySelector('.auth-tabs').hidden = form !== $('authForm'); forgotButton.hidden = form !== $('authForm') || authMode !== 'login'; }
 function showVerify(email) { pendingSignupEmail = email; $('verifyEmail').textContent = email; onlyAuthForm(verifyForm); $('authTitle').textContent = 'Xác minh email'; $('authSubtitle').textContent = 'Nhập mã trong email để hoàn tất đăng ký.'; $('verifyCode').focus(); }
 function showForgot() { onlyAuthForm(forgotForm); $('authTitle').textContent = 'Quên mật khẩu'; $('authSubtitle').textContent = 'Chúng tôi sẽ gửi link khôi phục về Gmail của bạn.'; $('forgotEmail').focus(); }
 function showReset() { $('authScreen').hidden = false; $('appShell').hidden = true; onlyAuthForm(resetForm); $('authTitle').textContent = 'Đặt mật khẩu mới'; $('authSubtitle').textContent = 'Tạo mật khẩu mới cho tài khoản của bạn.'; $('resetPassword').focus(); }
