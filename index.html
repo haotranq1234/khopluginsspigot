@@ -91,6 +91,8 @@
 
     <div class="modal-backdrop" id="modalBackdrop" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><button class="close-modal" id="closeModal">×</button><div class="modal-kicker">QUẢN TRỊ KHO PLUGIN</div><h2 id="modalTitle">Thêm plugin mới</h2><p id="modalDescription">Tạo plugin mới để bắt đầu quản lý các phiên bản.</p><form id="pluginForm"><label>Tên plugin<input id="pluginName" required placeholder="Ví dụ: EssentialsX" /></label><div class="form-row"><label>Nền tảng<select id="pluginPlatform"><option>Spigot</option><option>Paper</option><option>BungeeCord</option></select></label><label>Loại<select id="pluginTag"><option value="free">Miễn phí</option><option value="premium">Premium</option></select></label></div><div class="form-row"><label>Giá (VNĐ)<input id="pluginPrice" type="number" min="0" value="0" /></label><label>Phiên bản đầu tiên<input id="pluginVersion" required value="1.0.0" /></label></div><div class="modal-actions"><button type="button" class="secondary-button" id="cancelModal">Hủy</button><button type="submit" class="primary-button">Lưu plugin</button></div></form></div></div>
     <div class="toast" id="toast" role="status"></div>
-    <script src="app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="app-real.js"></script>
   </body>
 </html>
